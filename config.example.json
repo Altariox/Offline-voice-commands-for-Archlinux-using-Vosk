@@ -1,0 +1,18 @@
+{
+  "language": "fr",
+  "vosk_model_path": "./models/vosk-model-small-fr-0.22",
+  "sample_rate": 16000,
+  "device": null,
+  "wake_word": "assistant",
+  "require_wake_word": false,
+  "cooldown_ms": 800,
+  "apps": {
+    "firefox": "firefox",
+    "prism launcher": "prismlauncher"
+  },
+  "delete_base_dir": "/home/altariox",
+  "delete_aliases": {
+    "downloads": "/home/altariox/Téléchargements",
+    "test": "/home/altariox/test.txt"
+  }
+}
