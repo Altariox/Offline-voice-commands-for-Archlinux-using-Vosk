@@ -1,6 +1,6 @@
 # Voice Desktop Control for Hyprland (Vosk)
 
-Lightweight, fully local voice control for Linux (tested with Arch + Hyprland). Not cloud, not an LLM: Vosk offline STT + simple intent rules.
+Offline voice commands for Hyprland using Vosk. Launch apps and safely delete files via aliases.
 
 ## Features
 

@@ -5,7 +5,7 @@ README languages:
 - Español: README.es.md
 - Français: README.fr.md
 
-Quick summary: fully local voice control for Arch/Hyprland (offline Vosk STT + simple intent rules).
+Quick summary: offline voice commands for Hyprland using Vosk. Launch apps and safely delete files via aliases.
 
 ## Quick start
 
