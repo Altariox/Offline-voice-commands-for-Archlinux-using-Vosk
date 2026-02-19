@@ -18,6 +18,21 @@ def _which(cmd: str) -> bool:
     return shutil.which(cmd) is not None
 
 
+def _hypr_dispatch(*args: str) -> bool:
+    if not _which("hyprctl"):
+        return False
+    try:
+        subprocess.run(
+            ["hyprctl", "dispatch", *args],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        return True
+    except Exception:
+        return False
+
+
 def hypr_exec(command: str) -> ExecResult:
     """Execute an app command under Hyprland if possible."""
     command = command.strip()
@@ -42,6 +57,31 @@ def hypr_exec(command: str) -> ExecResult:
         return ExecResult(True, f"Lancé: {command}")
     except Exception as exc:  # noqa: BLE001
         return ExecResult(False, f"Erreur lancement: {exc}")
+
+
+def hypr_workspace(number: int) -> ExecResult:
+    """Switch to workspace number (Hyprland)."""
+    if number <= 0:
+        return ExecResult(False, "Numéro de bureau invalide")
+    if not _which("hyprctl"):
+        return ExecResult(False, "hyprctl introuvable")
+    ok = _hypr_dispatch("workspace", str(int(number)))
+    if ok:
+        return ExecResult(True, f"Bureau: {int(number)}")
+    return ExecResult(False, f"Impossible d'aller au bureau {int(number)}")
+
+
+def hypr_maximize_active() -> ExecResult:
+    """Maximize the active window without real fullscreen.
+
+    Uses Hyprland's `fakefullscreen` dispatch (best-effort).
+    """
+    if not _which("hyprctl"):
+        return ExecResult(False, "hyprctl introuvable")
+    ok = _hypr_dispatch("fakefullscreen")
+    if ok:
+        return ExecResult(True, "Fenêtre maximisée")
+    return ExecResult(False, "Maximisation indisponible (fakefullscreen)")
 
 
 def close_app(command: str) -> ExecResult:

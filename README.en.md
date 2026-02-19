@@ -60,6 +60,8 @@ python main.py --config ./config.json
 ## Voice commands
 
 - `ouvre <app>` / `lance <app>` / `demarre <app>`
+- `va au bureau <n>` / `workspace <n>` (switch workspace)
+- `maximise la fenetre` (maximize active window, no real fullscreen)
 - `supprime <alias>`
 
 Note: the command words are French on purpose (you can change patterns in `intents.py`).

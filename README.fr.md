@@ -54,4 +54,7 @@ Optionnel:
 
 Note: pour `ouvre/lance`, le nom d’app est matché de façon approximative ("marge d’erreur") si tu ne prononces pas exactement la clé de `apps`.
 
+- Changer de bureau: `va au bureau 3` (ou `workspace 3`)
+- Maximiser fenêtre active (sans vrai fullscreen): `maximise la fenetre`
+
 Note: les mots-clés de commande sont en français (modifiable dans `intents.py`).

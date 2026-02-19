@@ -53,6 +53,8 @@ Opcional:
 ## Comandos de voz
 
 - `ouvre <app>` / `lance <app>` / `demarre <app>`
+- Cambiar de escritorio: `va au bureau 3` / `workspace 3`
+- Maximizar ventana activa (sin fullscreen real): `maximise la fenetre`
 - `supprime <alias>`
 
 Nota: las palabras de comando están en francés (puedes cambiarlas en `intents.py`).

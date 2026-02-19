@@ -9,7 +9,7 @@ from difflib import SequenceMatcher
 from itertools import product
 from typing import Any, Dict, Optional
 
-from actions import ExecResult, close_app, hypr_exec, safe_delete
+from actions import ExecResult, close_app, hypr_exec, hypr_maximize_active, hypr_workspace, safe_delete
 
 
 @dataclass
@@ -54,6 +54,20 @@ _DELETE_PATTERNS = [
 _CLOSE_PATTERNS = [
     # FR + EN verbs
     re.compile(r"^(?:ferme|quitte|arrete|stop|close|quit|exit|kill)\s+(?P<app>.+)$"),
+]
+
+_WORKSPACE_PATTERNS = [
+    # FR
+    re.compile(r"^(?:va|aller)\s+(?:au|a|en)\s+(?:bureau|workspace|desktop)\s+(?P<num>.+)$"),
+    re.compile(r"^(?:bureau|workspace|desktop)\s+(?P<num>.+)$"),
+    # EN
+    re.compile(r"^(?:go)\s+(?:to)\s+(?:workspace|desktop)\s+(?P<num>.+)$"),
+]
+
+_MAXIMIZE_PATTERNS = [
+    # FR + EN
+    re.compile(r"^(?:maximise|maximiser|agrandis|agrandir|maximize)\b(?:\s+la\s+fenetre|\s+fenetre|\s+window)?$"),
+    re.compile(r"^(?:maximise|maximiser|agrandis|agrandir|maximize)\b.*(?:fenetre|window).*$"),
 ]
 
 
@@ -304,6 +318,25 @@ def match_intent(raw_text: str, ctx: IntentContext) -> Optional[ExecResult]:
                 )
             return result
 
+    # WORKSPACE
+    for pat in _WORKSPACE_PATTERNS:
+        m = pat.match(text)
+        if m:
+            num_raw = (m.group("num") or "").strip()
+            number = _parse_number(num_raw)
+            if number is None:
+                return ExecResult(False, f"Numéro de bureau invalide: {num_raw}")
+            if not ctx.cooldown_ok():
+                return ExecResult(True, "(cooldown)")
+            return hypr_workspace(number)
+
+    # MAXIMIZE
+    for pat in _MAXIMIZE_PATTERNS:
+        if pat.match(text):
+            if not ctx.cooldown_ok():
+                return ExecResult(True, "(cooldown)")
+            return hypr_maximize_active()
+
     # DELETE (alias-based)
     for pat in _DELETE_PATTERNS:
         m = pat.match(text)
@@ -320,7 +353,7 @@ def match_intent(raw_text: str, ctx: IntentContext) -> Optional[ExecResult]:
     if text in {"aide", "help"}:
         return ExecResult(
             True,
-            "Commandes: 'ouvre <app>' | 'ferme <app>' | 'supprime <alias>' (apps: match approximatif)",
+            "Commandes: 'ouvre <app>' | 'ferme <app>' | 'va au bureau <n>' | 'maximise la fenetre' | 'supprime <alias>'",
         )
 
     return None
@@ -370,6 +403,59 @@ def _strip_fillers(text: str) -> str:
         return ""
     toks = [x for x in t.split() if x and x not in _FILLER_TOKENS]
     return " ".join(toks)
+
+
+_NUM_WORDS: dict[str, int] = {
+    "zero": 0,
+    "un": 1,
+    "une": 1,
+    "deux": 2,
+    "trois": 3,
+    "quatre": 4,
+    "cinq": 5,
+    "six": 6,
+    "sept": 7,
+    "huit": 8,
+    "neuf": 9,
+    "dix": 10,
+    "onze": 11,
+    "douze": 12,
+    "treize": 13,
+    "quatorze": 14,
+    "quinze": 15,
+    "seize": 16,
+    "vingt": 20,
+}
+
+
+def _parse_number(text: str) -> Optional[int]:
+    """Parse digits or simple French number words (1..20) from a phrase."""
+    t = normalize_text(text)
+    if not t:
+        return None
+
+    m = re.search(r"\b(\d{1,3})\b", t)
+    if m:
+        try:
+            return int(m.group(1))
+        except ValueError:
+            return None
+
+    toks = [x for x in t.split() if x]
+    if not toks:
+        return None
+
+    # Handle "dix sept" etc.
+    if len(toks) >= 2 and toks[0] == "dix" and toks[1] in {"sept", "huit", "neuf"}:
+        return 10 + _NUM_WORDS.get(toks[1], 0)
+
+    # Basic single word numbers
+    for tok in toks:
+        if tok in _NUM_WORDS:
+            val = _NUM_WORDS[tok]
+            if val > 0:
+                return val
+    return None
 
 
 def _similarity(a: str, b: str) -> float:

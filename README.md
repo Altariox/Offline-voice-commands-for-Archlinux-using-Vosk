@@ -63,6 +63,8 @@ Important: `supprime ...` only deletes targets inside `delete_base_dir`.
 
 - `ouvre firefox`
 - `lance prism launcher`
+- `va au bureau 3`
+- `maximise la fenetre`
 - `supprime downloads` (alias défini dans la config)
 
 ## (Option) Démarrage auto (systemd --user)
