@@ -62,22 +62,57 @@ if ! _looks_like_json "$active_json"; then
 fi
 
 # Extract needed fields using python (avoid jq dependency)
-IFS=$'\t' read -r addr monitor_id at_x at_y size_w size_h is_floating < <(
+# Output is tab-separated to keep parsing stable even with spaces in titles.
+IFS=$'\t' read -r addr state_key pid monitor_id at_x at_y size_w size_h is_floating < <(
   python3 - <<'PY'
 import json, sys
+import re
+import hashlib
 
 try:
   a = json.loads(sys.stdin.read())
 except Exception:
-  print("NONE\t0\t0\t0\t0\t0\t0")
+  print("NONE\tunknown\t0\t0\t0\t0\t0\t0\t0")
   sys.exit(0)
 addr = a.get('address')
 # address can be int or string like '0x...'
 if isinstance(addr, int):
     addr = hex(addr)
 addr = str(addr or '')
+pid = a.get('pid')
+try:
+  pid = int(pid)
+except Exception:
+  pid = 0
+
+def valid_addr(s: str) -> bool:
+  if not s:
+    return False
+  if s in ('0x0', '0'):
+    return False
+  return bool(re.match(r'^0x[0-9a-fA-F]+$', s))
+
+def safe_filename(s: str) -> str:
+  s = re.sub(r'[^A-Za-z0-9._-]+', '_', s)
+  s = s.strip('._-')
+  return s or 'unknown'
+
+cls = str(a.get('class') or '')
+title = str(a.get('title') or '')
+
+if valid_addr(addr):
+  state_key = addr
+else:
+  # Fallback: pid is usually stable for the window lifetime.
+  if pid > 0:
+    state_key = f"pid-{pid}"
+  else:
+    # Last resort: hash class+title (avoid overly long filenames)
+    h = hashlib.sha1((cls + "\n" + title).encode('utf-8', 'ignore')).hexdigest()[:12]
+    state_key = f"win-{h}"
+
 if not addr:
-    addr = 'NONE'
+  addr = 'NONE'
 mon = a.get('monitor')
 try:
     mon = int(mon)
@@ -88,14 +123,19 @@ size = a.get('size') or [0, 0]
 flt = a.get('floating')
 flt = 1 if flt else 0
 sys.stdout.write(
-    f"{addr}\t{mon}\t{int(at[0])}\t{int(at[1])}\t{int(size[0])}\t{int(size[1])}\t{flt}"
+  f"{addr}\t{safe_filename(state_key)}\t{pid}\t{mon}\t{int(at[0])}\t{int(at[1])}\t{int(size[0])}\t{int(size[1])}\t{flt}"
 )
 PY
 <<<"$active_json"
 )
 
-if [[ -z "$addr" || "$addr" == "None" || "$addr" == "NONE" ]]; then
-  echo "Impossible de lire l'adresse de la fenêtre" >&2
+addr_for_dispatch="$addr"
+if [[ -z "$addr_for_dispatch" || "$addr_for_dispatch" == "None" || "$addr_for_dispatch" == "NONE" || "$addr_for_dispatch" == "0x0" || "$addr_for_dispatch" == "0" ]]; then
+  addr_for_dispatch=""
+fi
+
+if [[ -z "${state_key:-}" || "$state_key" == "unknown" ]]; then
+  echo "Impossible d'identifier la fenêtre (ni address ni pid)" >&2
   exit 3
 fi
 
@@ -108,6 +148,7 @@ _int_or_zero() {
   fi
 }
 
+pid="$(_int_or_zero "$pid")"
 monitor_id="$(_int_or_zero "$monitor_id")"
 at_x="$(_int_or_zero "$at_x")"
 at_y="$(_int_or_zero "$at_y")"
@@ -115,16 +156,18 @@ size_w="$(_int_or_zero "$size_w")"
 size_h="$(_int_or_zero "$size_h")"
 is_floating="$(_int_or_zero "$is_floating")"
 
-state_file="$state_dir/${addr}.json"
+state_file="$state_dir/${state_key}.json"
 
 # Helper: try address-specific dispatch first, fallback to active window dispatch.
 _hypr_move_resize() {
   local x="$1" y="$2" w="$3" h="$4"
 
   # Address-specific (preferred)
-  if hyprctl dispatch movewindowpixel "exact $x $y,address:$addr" >/dev/null 2>&1 \
-    && hyprctl dispatch resizewindowpixel "exact $w $h,address:$addr" >/dev/null 2>&1; then
-    return 0
+  if [[ -n "$addr_for_dispatch" ]]; then
+    if hyprctl dispatch movewindowpixel "exact $x $y,address:$addr_for_dispatch" >/dev/null 2>&1 \
+      && hyprctl dispatch resizewindowpixel "exact $w $h,address:$addr_for_dispatch" >/dev/null 2>&1; then
+      return 0
+    fi
   fi
 
   # Active-window fallback
@@ -135,8 +178,10 @@ _hypr_move_resize() {
 
 _hypr_toggle_floating() {
   # Address-specific
-  if hyprctl dispatch togglefloating "address:$addr" >/dev/null 2>&1; then
-    return 0
+  if [[ -n "$addr_for_dispatch" ]]; then
+    if hyprctl dispatch togglefloating "address:$addr_for_dispatch" >/dev/null 2>&1; then
+      return 0
+    fi
   fi
   # Fallback
   hyprctl dispatch togglefloating >/dev/null 2>&1 || true

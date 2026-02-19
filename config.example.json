@@ -43,7 +43,39 @@
     "only office": ["onlyoffice", "only office", "onmly office", "only ofice", "only ofis"],
     "discord": ["discorde", "discor", "dis code"],
     "shotcut": ["shot cut", "short cut"],
-    "libreoffice": ["libre office", "libre office writer", "libre office calc"]
+    "libreoffice": ["libre office", "libre office writer", "libre office calc"],
+    "fichiers": [
+      "fichier",
+      "fichiers",
+      "les fichiers",
+      "mes fichiers",
+      "mes fichier",
+      "gestionnaire de fichiers",
+      "gestionnaire de fichier",
+      "explorateur",
+      "explorateur de fichiers",
+      "explorateur de fichier",
+      "file",
+      "files",
+      "file manager",
+      "file explorer",
+      "explorer",
+      "exploreur",
+      "exploreur de fichiers",
+      "ouvre fichiers",
+      "ouvre les fichiers",
+      "ouvre le gestionnaire de fichiers",
+      "ouvre l explorateur",
+      "ouvrir fichiers",
+      "ouvrir les fichiers",
+      "dossier",
+      "dossiers",
+      "mes dossiers",
+      "mes dossier",
+      "documents",
+      "document",
+      "mes documents"
+    ]
   },
   "apps": {
     "firefox": "firefox",
@@ -58,7 +90,8 @@
     "shotcut": "shotcut",
     "blender": "blender",
     "discord": "discord",
-    "only office": "onlyoffice-desktopeditors"
+    "only office": "onlyoffice-desktopeditors",
+    "fichiers": "thunar"
   },
   "delete_base_dir": "/home/altariox",
   "delete_aliases": {
