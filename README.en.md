@@ -44,6 +44,12 @@ Optional:
 - `notification_timeout_ms`: timeout (ms)
 - `app_match_threshold`: matching sensitivity (0.5 = very sensitive)
 
+Typos / Vosk variants:
+- `app_aliases`: map `app_name` -> list of variants Vosk might output (example: `"prusa slicer": ["processeur", "prusse a cela et"]`).
+
+Maximize:
+- `maximize_command`: shell command executed when you say "maximise la fenetre" (set it to the same script used by your Hyprland bind).
+
 ## Run
 
 ```bash

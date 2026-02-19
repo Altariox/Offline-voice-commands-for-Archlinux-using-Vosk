@@ -11,6 +11,40 @@
   "app_min_len": 4,
   "notifications_enabled": true,
   "notification_timeout_ms": 2500,
+  "maximize_command": "",
+  "app_aliases": {
+    "chromium": ["chrome", "google chrome", "chrom"],
+    "brave browser": ["brave", "brave navigateur", "navigateur brave"],
+    "lunar client": ["lunar", "lunar clients", "lunare client", "lunare cliants", "lunaire client"],
+    "prism launcher": ["prism", "prisme", "prisme launcher", "prismlauncher", "prise meme cher"],
+    "prusa slicer": [
+      "prusse a cela et",
+      "prusse as et",
+      "poussa a cela et soeurs",
+      "pousse a laser",
+      "a laser",
+      "poserent",
+      "poser sur",
+      "posa a lecteur",
+      "processeur",
+      "plus a les heures",
+      "plus a l aise heures"
+    ],
+    "orca slicer": [
+      "hors casse lecteurs",
+      "hors cas cela et soeurs",
+      "orchestre",
+      "orchestre soeur",
+      "orchestre les heures",
+      "or catalyseur",
+      "orques",
+      "orgasme laser"
+    ],
+    "only office": ["onlyoffice", "only office", "onmly office", "only ofice", "only ofis"],
+    "discord": ["discorde", "discor", "dis code"],
+    "shotcut": ["shot cut", "short cut"],
+    "libreoffice": ["libre office", "libre office writer", "libre office calc"]
+  },
   "apps": {
     "firefox": "firefox",
     "chromium": "chromium",

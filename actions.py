@@ -72,16 +72,32 @@ def hypr_workspace(number: int) -> ExecResult:
 
 
 def hypr_maximize_active() -> ExecResult:
-    """Maximize the active window without real fullscreen.
+    return hypr_maximize_active_with_command(None)
 
-    Uses Hyprland's `fakefullscreen` dispatch (best-effort).
+
+def hypr_maximize_active_with_command(command: str | None) -> ExecResult:
+    """Maximize the active window (Hyprland).
+
+    If `command` is provided, it is executed with `shell=True`.
+    This is intended to mirror the user's Hyprland bind, e.g. a window pin/maximize script.
+
+    Otherwise falls back to `hyprctl dispatch fakefullscreen` (best-effort).
     """
+    if command is not None:
+        cmd = command.strip()
+        if cmd:
+            try:
+                subprocess.Popen(cmd, shell=True)
+                return ExecResult(True, "Fenêtre maximisée")
+            except Exception as exc:  # noqa: BLE001
+                return ExecResult(False, f"Erreur maximisation: {exc}")
+
     if not _which("hyprctl"):
         return ExecResult(False, "hyprctl introuvable")
     ok = _hypr_dispatch("fakefullscreen")
     if ok:
         return ExecResult(True, "Fenêtre maximisée")
-    return ExecResult(False, "Maximisation indisponible (fakefullscreen)")
+    return ExecResult(False, "Maximisation indisponible")
 
 
 def close_app(command: str) -> ExecResult:

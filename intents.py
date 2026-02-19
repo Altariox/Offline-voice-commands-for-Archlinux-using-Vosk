@@ -9,7 +9,7 @@ from difflib import SequenceMatcher
 from itertools import product
 from typing import Any, Dict, Optional
 
-from actions import ExecResult, close_app, hypr_exec, hypr_maximize_active, hypr_workspace, safe_delete
+from actions import ExecResult, close_app, hypr_exec, hypr_maximize_active_with_command, hypr_workspace, safe_delete
 
 
 @dataclass
@@ -21,6 +21,7 @@ class IntentContext:
     app_match_threshold: float = 0.72
     app_short_threshold: float = 0.90
     app_min_len: int = 4
+    maximize_command: str = ""
     _last_action_ts: float = 0.0
 
     def cooldown_ok(self) -> bool:
@@ -94,7 +95,11 @@ _APP_ARTICLES = [
 ]
 
 
-def build_apps_map(apps_cfg: Dict[str, str]) -> Dict[str, str]:
+def build_apps_map(
+    apps_cfg: Dict[str, str],
+    *,
+    app_aliases: Optional[Dict[str, list[str]]] = None,
+) -> Dict[str, str]:
     """Build a normalized app map with many aliases.
 
     Goal: tolerate typical Vosk mis-hearings in FR, plus some EN words.
@@ -112,6 +117,15 @@ def build_apps_map(apps_cfg: Dict[str, str]) -> Dict[str, str]:
         for alias in _generate_app_aliases(canonical_name):
             if alias and alias not in expanded:
                 expanded[alias] = cmd
+
+        # Config-provided aliases/typos for this app
+        if app_aliases:
+            raw_list = app_aliases.get(canonical_name) or app_aliases.get(canonical_name.replace(" ", ""))
+            if raw_list:
+                for raw_alias in raw_list:
+                    alias = normalize_text(str(raw_alias))
+                    if alias and alias not in expanded:
+                        expanded[alias] = cmd
     return expanded
 
 
@@ -189,66 +203,7 @@ def _generate_app_aliases(canonical_key: str) -> set[str]:
         variants.add(" ".join(tokens[:2]))
         variants.add(" ".join(tokens[-2:]))
 
-    # App-specific high-value aliases (still normalized)
-    if key in {"chromium"}:
-        variants |= {"chrome", "google chrome", "chrom"}
-    if key in {"brave", "brave browser"}:
-        variants |= {"brave", "brave navigateur", "navigateur brave"}
-    if key in {"lunar client", "lunar-client", "lunarclient", "lunar"}:
-        variants |= {"lunar", "lunar clients", "lunare client", "lunare cliants", "lunaire client"}
-    if key in {"prism launcher", "prismlauncher"}:
-        variants |= {"prism", "prisme launcher", "prisme", "prismlauncher"}
-    if key in {"prusa slicer", "prusa"}:
-        variants |= {
-            "prusa",
-            "prusa sliceur",
-            "prusa slicer",
-            # Observed Vosk FR outputs for "prusa slicer" / "prusaslicer"
-            "prusse a cela et",
-            "prusse as et",
-            "poussa a cela et soeurs",
-            "pousse a laser",
-            "a laser",
-            "poserent",
-            "poser sur",
-            "posa sa s ur",
-            "posa sa sur",
-            "posa a lecteur",
-            "processeur",
-            "plus a les heures",
-            "plus a l aise heures",
-        }
-    if key in {"orca slicer", "orca"}:
-        variants |= {
-            "orca",
-            "orca sliceur",
-            "orca slicer",
-            # Observed Vosk FR outputs for "orca slicer" / "orcaslicer"
-            "hors casse lecteurs",
-            "hors cas cela et soeurs",
-            "orchestre",
-            "orchestre soeur",
-            "orchestre les heures",
-            "orchestre sur",
-            "orchestre s ur",
-            "orchestre sur lance or casse",
-            "orchestre sur lance or casse",
-            "orques",
-            "orques et",
-            "or casse",
-            "hors casse",
-            "hors casse avec ca",
-            "or catalyseur",
-            "orgasme laser",
-        }
-    if key in {"libreoffice", "libre office"}:
-        variants |= {"libreoffice", "libre office", "libre office writer", "libre office calc"}
-    if key in {"onlyoffice", "only office"}:
-        variants |= {"onlyoffice", "only office", "onmly office", "only ofice", "only ofis"}
-    if key in {"discord"}:
-        variants |= {"discorde", "discor", "dis code"}
-    if key in {"shotcut"}:
-        variants |= {"shot cut", "shotcut", "short cut"}
+    # App-specific typos/aliases live in config.json (app_aliases)
 
     # Normalize once again to be safe and drop empties
     normalized = {normalize_text(v) for v in variants}
@@ -335,7 +290,7 @@ def match_intent(raw_text: str, ctx: IntentContext) -> Optional[ExecResult]:
         if pat.match(text):
             if not ctx.cooldown_ok():
                 return ExecResult(True, "(cooldown)")
-            return hypr_maximize_active()
+            return hypr_maximize_active_with_command(ctx.maximize_command)
 
     # DELETE (alias-based)
     for pat in _DELETE_PATTERNS:
@@ -409,6 +364,7 @@ _NUM_WORDS: dict[str, int] = {
     "zero": 0,
     "un": 1,
     "une": 1,
+    "de": 2,
     "deux": 2,
     "trois": 3,
     "quatre": 4,

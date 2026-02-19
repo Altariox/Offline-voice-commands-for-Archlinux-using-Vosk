@@ -44,6 +44,12 @@ Opcional:
 - `notification_timeout_ms`: duración (ms)
 - `app_match_threshold`: sensibilidad del matching (0.5 = muy sensible)
 
+Typos / variantes de Vosk:
+- `app_aliases`: mapa `app` -> lista de variantes que Vosk puede devolver.
+
+Maximizar:
+- `maximize_command`: comando shell que se ejecuta al decir "maximise la fenetre" (usa el mismo script de tu bind de Hyprland).
+
 ## Ejecutar
 
 ```bash

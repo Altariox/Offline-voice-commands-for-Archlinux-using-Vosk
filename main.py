@@ -48,14 +48,23 @@ def main() -> int:
     notifications_enabled = bool(cfg.get("notifications_enabled", True))
     notification_timeout_ms = int(cfg.get("notification_timeout_ms", 2500))
 
+    maximize_command = str(cfg.get("maximize_command", "") or "")
+    app_aliases = cfg.get("app_aliases", {})
+    if not isinstance(app_aliases, dict):
+        app_aliases = {}
+
     ctx = IntentContext(
-        apps=build_apps_map({k: str(v) for k, v in cfg.get("apps", {}).items()}),
+        apps=build_apps_map(
+            {k: str(v) for k, v in cfg.get("apps", {}).items()},
+            app_aliases={str(k): list(v) if isinstance(v, list) else [] for k, v in app_aliases.items()},
+        ),
         delete_base_dir=str(cfg.get("delete_base_dir", str(Path.home()))),
         delete_aliases={normalize_text(k): v for k, v in cfg.get("delete_aliases", {}).items()},
         cooldown_ms=int(cfg.get("cooldown_ms", 800)),
         app_match_threshold=float(cfg.get("app_match_threshold", 0.72)),
         app_short_threshold=float(cfg.get("app_short_threshold", 0.90)),
         app_min_len=int(cfg.get("app_min_len", 4)),
+        maximize_command=maximize_command,
     )
 
     _print("Chargement modèle Vosk...")

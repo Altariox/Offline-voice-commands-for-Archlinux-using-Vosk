@@ -51,6 +51,12 @@ Optionnel:
 - `notification_timeout_ms`: durée (ms)
 - `app_match_threshold`: sensibilité du matching (0.5 = très sensible)
 
+Typos / variantes Vosk:
+- `app_aliases`: dictionnaire `nom_app` -> liste de variantes entendues (ex: `"prusa slicer": ["processeur", "prusse a cela et"]`).
+
+Maximiser:
+- `maximize_command`: commande shell exécutée quand tu dis "maximise la fenetre" (mets le même script que ton bind Hyprland).
+
 Important: `supprime ...` only deletes targets inside `delete_base_dir`.
 
 ## Run

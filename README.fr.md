@@ -44,6 +44,13 @@ Optionnel:
 - `notification_timeout_ms`: durée (ms)
 - `app_match_threshold`: sensibilité du matching (0.5 = très sensible)
 
+Typos / mots mal reconnus (recommandé):
+- `app_aliases`: ajoute des variantes entendues par Vosk pour une app, ex:
+	- `"prusa slicer": ["processeur", "prusse a cela et"]`
+
+Maximiser la fenêtre:
+- `maximize_command`: commande shell à exécuter (mets la même que ton bind Hyprland, ex: ton `windowpin.sh`).
+
 ## Lancement
 
 ```bash
