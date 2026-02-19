@@ -10,7 +10,7 @@ from pathlib import Path
 import sounddevice as sd
 from vosk import KaldiRecognizer, Model
 
-from intents import IntentContext, load_config, match_intent, normalize_text
+from intents import IntentContext, build_apps_map, load_config, match_intent, normalize_text
 
 
 def _print(msg: str) -> None:
@@ -45,7 +45,7 @@ def main() -> int:
     require_wake_word = bool(cfg.get("require_wake_word", False))
 
     ctx = IntentContext(
-        apps={normalize_text(k): v for k, v in cfg.get("apps", {}).items()},
+        apps=build_apps_map({k: str(v) for k, v in cfg.get("apps", {}).items()}),
         delete_base_dir=str(cfg.get("delete_base_dir", str(Path.home()))),
         delete_aliases={normalize_text(k): v for k, v in cfg.get("delete_aliases", {}).items()},
         cooldown_ms=int(cfg.get("cooldown_ms", 800)),

@@ -8,7 +8,18 @@
   "cooldown_ms": 800,
   "apps": {
     "firefox": "firefox",
-    "prism launcher": "prismlauncher"
+    "chromium": "chromium",
+    "brave browser": "brave",
+    "lunar client": "lunar-client",
+    "prism launcher": "prismlauncher",
+    "prusa slicer": "prusa-slicer",
+    "orca slicer": "orca-slicer",
+    "libreoffice": "libreoffice",
+    "termius": "termius",
+    "shotcut": "shotcut",
+    "blender": "blender",
+    "discord": "discord",
+    "only office": "onlyoffice-desktopeditors"
   },
   "delete_base_dir": "/home/altariox",
   "delete_aliases": {

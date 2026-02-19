@@ -6,6 +6,7 @@ import time
 import unicodedata
 from dataclasses import dataclass
 from difflib import SequenceMatcher
+from itertools import product
 from typing import Any, Dict, Optional
 
 from actions import ExecResult, hypr_exec, safe_delete
@@ -39,7 +40,8 @@ def normalize_text(text: str) -> str:
 
 
 _OPEN_PATTERNS = [
-    re.compile(r"^(?:ouvre|lance|demarre)\s+(?P<app>.+)$"),
+    # FR + EN verbs (Vosk FR can still output English-ish words sometimes)
+    re.compile(r"^(?:ouvre|lance|demarre|open|launch|start|run)\s+(?P<app>.+)$"),
 ]
 
 _DELETE_PATTERNS = [
@@ -53,6 +55,143 @@ class ResolvedApp:
     command: str
     score: float
     exact: bool
+
+
+_APP_ARTICLES = [
+    "le",
+    "la",
+    "les",
+    "un",
+    "une",
+    "du",
+    "de",
+    "des",
+    "mon",
+    "ma",
+    "mes",
+]
+
+
+def build_apps_map(apps_cfg: Dict[str, str]) -> Dict[str, str]:
+    """Build a normalized app map with many aliases.
+
+    Goal: tolerate typical Vosk mis-hearings in FR, plus some EN words.
+    - Never overwrites explicit user keys.
+    - Generates many extra keys (aliases) per app.
+    """
+    explicit: Dict[str, str] = {}
+    for name, cmd in apps_cfg.items():
+        key = normalize_text(name)
+        if key:
+            explicit[key] = str(cmd)
+
+    expanded: Dict[str, str] = dict(explicit)
+    for canonical_name, cmd in explicit.items():
+        for alias in _generate_app_aliases(canonical_name):
+            if alias and alias not in expanded:
+                expanded[alias] = cmd
+    return expanded
+
+
+def _plural_toggle(token: str) -> set[str]:
+    if len(token) <= 2:
+        return {token}
+    if token.endswith("s"):
+        return {token, token[:-1]}
+    return {token, token + "s"}
+
+
+def _tokens_variants(tokens: list[str]) -> set[str]:
+    if not tokens:
+        return set()
+    choices = [_plural_toggle(t) for t in tokens]
+    out: set[str] = set()
+    for combo in product(*choices):
+        out.add(" ".join(combo))
+    return out
+
+
+def _generate_app_aliases(canonical_key: str) -> set[str]:
+    """Generate lots of normalized aliases for one app key."""
+    key = normalize_text(canonical_key)
+    if not key:
+        return set()
+
+    tokens = key.split()
+    variants: set[str] = set()
+
+    # Base forms
+    variants.add(key)
+    variants.add(key.replace(" ", ""))
+
+    # With common FR articles ("ouvre le firefox")
+    for art in _APP_ARTICLES:
+        variants.add(f"{art} {key}")
+
+    # Pluralization toggles (clients/client, etc.)
+    variants |= _tokens_variants(tokens)
+
+    # Common role words (browser/navigateur/client/launcher/slicer)
+    role_words = {
+        "browser",
+        "navigateur",
+        "client",
+        "launcher",
+        "slicer",
+        "sliceur",
+        "editor",
+        "editeur",
+    }
+    # If role already present, also accept without it
+    base_tokens = [t for t in tokens if t not in role_words]
+    base = " ".join(base_tokens) if base_tokens else key
+    if base and base != key:
+        variants.add(base)
+        variants.add(base.replace(" ", ""))
+
+    # Add browser/navigateur for known browsers
+    if key in {"firefox", "chromium", "brave", "brave browser"} or "browser" in tokens or "navigateur" in tokens:
+        for w in ["browser", "navigateur", "navigateur web"]:
+            variants.add(f"{base} {w}")
+            variants.add(f"{w} {base}")
+
+    # Add slicer/sliceur for slicers
+    if "slicer" in tokens or "sliceur" in tokens or "slicer" in key or "sliceur" in key:
+        for w in ["slicer", "sliceur"]:
+            variants.add(f"{base} {w}")
+            variants.add(f"{w} {base}")
+
+    # Common multi-word join/split
+    if len(tokens) >= 2:
+        variants.add(tokens[0])
+        variants.add(" ".join(tokens[:2]))
+        variants.add(" ".join(tokens[-2:]))
+
+    # App-specific high-value aliases (still normalized)
+    if key in {"chromium"}:
+        variants |= {"chrome", "google chrome", "chrom"}
+    if key in {"brave", "brave browser"}:
+        variants |= {"brave", "brave navigateur", "navigateur brave"}
+    if key in {"lunar client", "lunar-client", "lunarclient", "lunar"}:
+        variants |= {"lunar", "lunar clients", "lunare client", "lunare cliants", "lunaire client"}
+    if key in {"prism launcher", "prismlauncher"}:
+        variants |= {"prism", "prisme launcher", "prisme", "prismlauncher"}
+    if key in {"prusa slicer", "prusa"}:
+        variants |= {"prusa", "prusa sliceur", "prusa slicer"}
+    if key in {"orca slicer", "orca"}:
+        variants |= {"orca", "orca sliceur", "orca slicer"}
+    if key in {"libreoffice", "libre office"}:
+        variants |= {"libreoffice", "libre office", "libre office writer", "libre office calc"}
+    if key in {"onlyoffice", "only office"}:
+        variants |= {"onlyoffice", "only office", "onmly office", "only ofice", "only ofis"}
+    if key in {"discord"}:
+        variants |= {"discorde", "discor", "dis code"}
+    if key in {"shotcut"}:
+        variants |= {"shot cut", "shotcut", "short cut"}
+
+    # Normalize once again to be safe and drop empties
+    normalized = {normalize_text(v) for v in variants}
+    return {v for v in normalized if v}
 
 
 def match_intent(raw_text: str, ctx: IntentContext) -> Optional[ExecResult]:
