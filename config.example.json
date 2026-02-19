@@ -11,7 +11,7 @@
   "app_min_len": 4,
   "notifications_enabled": true,
   "notification_timeout_ms": 2500,
-  "maximize_command": "",
+  "maximize_command": "./scripts/windowpin.sh",
   "app_aliases": {
     "chromium": ["chrome", "google chrome", "chrom"],
     "brave browser": ["brave", "brave navigateur", "navigateur brave"],
